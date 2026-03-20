@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -30,8 +30,8 @@ namespace ConsoleRenderer.Tests
                 for (int yy = 0; yy < height; yy++)
                 {
                     var pixel = canvas.Get(xx, yy, false);
-                    Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
-                    Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
+                    Assert.Equal(new TerminalColor(canvas.DefaultForegroundColor), pixel.Foreground);
+                    Assert.Equal(new TerminalColor(canvas.DefaultBackgroundColor), pixel.Background);
 
                     if ( yy == y && xx >= x && xx < x+text.Length)
                     {
@@ -67,8 +67,8 @@ namespace ConsoleRenderer.Tests
                 for (int yy = 0; yy < height; yy++)
                 {
                     var pixel = canvas.Get(xx, yy, false);
-                    Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
-                    Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
+                    Assert.Equal(new TerminalColor(canvas.DefaultForegroundColor), pixel.Foreground);
+                    Assert.Equal(new TerminalColor(canvas.DefaultBackgroundColor), pixel.Background);
 
                     int offset = (int)Math.Floor(text.Length / 2d);
                     if (yy == y && xx >= x - offset && xx < x - offset + text.Length)
@@ -107,16 +107,16 @@ namespace ConsoleRenderer.Tests
                     var pixel = canvas.Get(xx, yy, false);
                     if (yy == y && xx >= x && xx < x + text.Length)
                     {
-                        Assert.Equal(foreground, pixel.Foreground);
-                        Assert.Equal(background, pixel.Background);
+                        Assert.Equal(new TerminalColor(foreground), pixel.Foreground);
+                        Assert.Equal(new TerminalColor(background), pixel.Background);
 
                         var intendedChar = text.ToCharArray()[xx - x];
                         Assert.Equal(intendedChar, pixel.Character);
                     }
                     else
                     {
-                        Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
-                        Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
+                        Assert.Equal(new TerminalColor(canvas.DefaultForegroundColor), pixel.Foreground);
+                        Assert.Equal(new TerminalColor(canvas.DefaultBackgroundColor), pixel.Background);
                         Assert.Equal(' ', pixel.Character);
                     }
                 }
@@ -148,16 +148,16 @@ namespace ConsoleRenderer.Tests
 
                     if (yy == y && xx >= x - offset && xx < x - offset + text.Length)
                     {
-                        Assert.Equal(foreground, pixel.Foreground);
-                        Assert.Equal(background, pixel.Background);
+                        Assert.Equal(new TerminalColor(foreground), pixel.Foreground);
+                        Assert.Equal(new TerminalColor(background), pixel.Background);
 
                         var intendedChar = text.ToCharArray()[xx - x + offset];
                         Assert.Equal(intendedChar, pixel.Character);
                     }
                     else
                     {
-                        Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
-                        Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
+                        Assert.Equal(new TerminalColor(canvas.DefaultForegroundColor), pixel.Foreground);
+                        Assert.Equal(new TerminalColor(canvas.DefaultBackgroundColor), pixel.Background);
                         Assert.Equal(' ', pixel.Character);
                     }
                 }

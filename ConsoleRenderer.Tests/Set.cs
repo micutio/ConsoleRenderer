@@ -15,8 +15,8 @@ namespace ConsoleRenderer.Tests
 
             // Assert
             var pixel = canvas.Get(0, 0, false);
-            Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
-            Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
+            Assert.Equal(new TerminalColor(canvas.DefaultForegroundColor), pixel.Foreground);
+            Assert.Equal(new TerminalColor(canvas.DefaultBackgroundColor), pixel.Background);
             Assert.Equal('*', pixel.Character);
         }
 
@@ -33,8 +33,8 @@ namespace ConsoleRenderer.Tests
 
             // Assert
             var pixel = canvas.Get(0, 0, false);
-            Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
-            Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
+            Assert.Equal(new TerminalColor(canvas.DefaultForegroundColor), pixel.Foreground);
+            Assert.Equal(new TerminalColor(canvas.DefaultBackgroundColor), pixel.Background);
             Assert.Equal(character, pixel.Character);
         }
 
@@ -51,8 +51,8 @@ namespace ConsoleRenderer.Tests
 
             // Assert
             var pixel = canvas.Get(0, 0, false);
-            Assert.Equal(color, pixel.Foreground);
-            Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
+            Assert.Equal(new TerminalColor(color), pixel.Foreground);
+            Assert.Equal(new TerminalColor(canvas.DefaultBackgroundColor), pixel.Background);
             Assert.Equal('*', pixel.Character);
         }
 
@@ -62,7 +62,7 @@ namespace ConsoleRenderer.Tests
         public void X_Y_Pixel(char character, ConsoleColor foreground, ConsoleColor background)
         {
             // Assemble
-            Pixel target = new Pixel { Background = background, Foreground = foreground, Character = character };
+            Pixel target = new Pixel(character, new TerminalColor(foreground), new TerminalColor(background));
             var canvas = new ConsoleCanvas(10, 10);
 
             // Act
@@ -77,9 +77,9 @@ namespace ConsoleRenderer.Tests
         {
             // Assemble
             Pixel[] target = new Pixel[]
-            { 
-                new() { Background = ConsoleColor.Yellow, Foreground = ConsoleColor.Green, Character = 'x' },
-                new() { Background = ConsoleColor.Red, Foreground = ConsoleColor.Blue, Character = 'a' },
+            {
+                new Pixel('x', new TerminalColor(ConsoleColor.Green), new TerminalColor(ConsoleColor.Yellow)),
+                new Pixel('a', new TerminalColor(ConsoleColor.Blue), new TerminalColor(ConsoleColor.Red)),
             };
 
             var canvas = new ConsoleCanvas(10, 10);
@@ -98,8 +98,8 @@ namespace ConsoleRenderer.Tests
             // Assemble
             List<Pixel> target = new()
             {
-                new() { Background = ConsoleColor.Yellow, Foreground = ConsoleColor.Green, Character = 'x' },
-                new() { Background = ConsoleColor.Red, Foreground = ConsoleColor.Blue, Character = 'a' }
+                new Pixel('x', new TerminalColor(ConsoleColor.Green), new TerminalColor(ConsoleColor.Yellow)),
+                new Pixel('a', new TerminalColor(ConsoleColor.Blue), new TerminalColor(ConsoleColor.Red))
             };
 
             var canvas = new ConsoleCanvas(10, 10);
@@ -126,7 +126,7 @@ namespace ConsoleRenderer.Tests
             // Assert
             var pixel = canvas.Get(0, 0, false);
             Assert.Equal(character, pixel.Character);
-            Assert.Equal(color, pixel.Foreground);
+            Assert.Equal(new TerminalColor(color), pixel.Foreground);
         }
 
         [Theory]
@@ -143,8 +143,8 @@ namespace ConsoleRenderer.Tests
             // Assert
             var pixel = canvas.Get(0, 0, false);
             Assert.Equal(character, pixel.Character);
-            Assert.Equal(foreground, pixel.Foreground);
-            Assert.Equal(background, pixel.Background);
+            Assert.Equal(new TerminalColor(foreground), pixel.Foreground);
+            Assert.Equal(new TerminalColor(background), pixel.Background);
         }
     }
 }

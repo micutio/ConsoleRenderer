@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,8 +28,8 @@ namespace ConsoleRenderer.Tests
                 for (int y = 0; y < height; y++)
                 {
                     var pixel = canvas.Get(x, y, false);
-                    Assert.Equal(foreground, pixel.Foreground);
-                    Assert.Equal(background, pixel.Background);
+                    Assert.Equal(new TerminalColor(foreground), pixel.Foreground);
+                    Assert.Equal(new TerminalColor(background), pixel.Background);
                     Assert.Equal(character, pixel.Character);
                 }
             }

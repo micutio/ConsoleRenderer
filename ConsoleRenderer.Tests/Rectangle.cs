@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -28,8 +28,8 @@ namespace ConsoleRenderer.Tests
                 for (int y = 0; y < height; y++)
                 {
                     var pixel = canvas.Get(x, y, false);
-                    Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
-                    Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
+                    Assert.Equal(new TerminalColor(canvas.DefaultForegroundColor), pixel.Foreground);
+                    Assert.Equal(new TerminalColor(canvas.DefaultBackgroundColor), pixel.Background);
 
                     if (x >= startX && x < startX + w && y >= startY && y < startY + h)
                     {
@@ -63,8 +63,8 @@ namespace ConsoleRenderer.Tests
                 for (int y = 0; y < height; y++)
                 {
                     var pixel = canvas.Get(x, y, false);
-                    Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
-                    Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
+                    Assert.Equal(new TerminalColor(canvas.DefaultForegroundColor), pixel.Foreground);
+                    Assert.Equal(new TerminalColor(canvas.DefaultBackgroundColor), pixel.Background);
 
                     if ( x >= startX && x < startX + w && y >= startY && y < startY + h)
                     {
@@ -103,13 +103,13 @@ namespace ConsoleRenderer.Tests
                     if (x >= startX && x < startX + w && y >= startY && y < startY + h)
                     {
                         Assert.Equal(character, pixel.Character);
-                        Assert.Equal(foreground, pixel.Foreground);
-                        Assert.Equal(background, pixel.Background);
+                        Assert.Equal(new TerminalColor(foreground), pixel.Foreground);
+                        Assert.Equal(new TerminalColor(background), pixel.Background);
                     }
                     else
                     {
-                        Assert.Equal(canvas.DefaultForegroundColor, pixel.Foreground);
-                        Assert.Equal(canvas.DefaultBackgroundColor, pixel.Background);
+                        Assert.Equal(new TerminalColor(canvas.DefaultForegroundColor), pixel.Foreground);
+                        Assert.Equal(new TerminalColor(canvas.DefaultBackgroundColor), pixel.Background);
                         Assert.Equal(' ', pixel.Character);
                     }
                 }

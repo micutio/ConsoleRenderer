@@ -1,5 +1,6 @@
 using System;
 using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -97,12 +98,19 @@ namespace ConsoleRenderer
         /// <returns></returns>
         public ConsoleCanvas Fill(char character, ConsoleColor foreground, ConsoleColor background)
         {
-            var pixel = new Pixel
-            {
-                Character = character,
-                Foreground = foreground,
-                Background = background
-            };
+            return Fill(character, new TerminalColor(foreground), new TerminalColor(background));
+        }
+
+        /// <summary>
+        /// Fills the canvas with the specified character in the given colors
+        /// </summary>
+        /// <param name="character">Character to fill the canvas with</param>
+        /// <param name="foreground">Foreground color</param>
+        /// <param name="background">Background color</param>
+        /// <returns></returns>
+        public ConsoleCanvas Fill(char character, TerminalColor foreground, TerminalColor background)
+        {
+            var pixel = new Pixel(character, foreground, background);
             for (int i = 0; i < _pixels.Length; i++)
                 _pixels[i] = pixel;
 
@@ -125,6 +133,17 @@ namespace ConsoleRenderer
         /// <param name="foreground">Color to draw the border with</param>
         /// <param name="background">Color to draw the border with</param>
         public ConsoleCanvas CreateBorder(char? character, ConsoleColor foreground, ConsoleColor background)
+        {
+            return CreateBorder(0, 0, Width, Height, character, new TerminalColor(foreground), new TerminalColor(background));
+        }
+
+        /// <summary>
+        /// Creates a border on the edges of the canvas with the specified character and colors
+        /// </summary>
+        /// <param name="character">Character to draw the border with, or <see cref="null"/> to use default pretty borders</param>
+        /// <param name="foreground">Color to draw the border with</param>
+        /// <param name="background">Color to draw the border with</param>
+        public ConsoleCanvas CreateBorder(char? character, TerminalColor foreground, TerminalColor background)
         {
             return CreateBorder(0, 0, Width, Height, character, foreground, background);
         }
@@ -155,15 +174,26 @@ namespace ConsoleRenderer
         /// <returns></returns>
         public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char? character, ConsoleColor foreground, ConsoleColor background)
         {
+            return CreateBorder(startX, startY, width, height, character, new TerminalColor(foreground), new TerminalColor(background));
+        }
+
+        /// <summary>
+        /// Creates a border on the edges of a rectangle with the specified character and colors
+        /// </summary>
+        /// <param name="startX">Left edge of the rectangle</param>
+        /// <param name="startY">Top edge of the rectangle</param>
+        /// <param name="width">Width of the rectangle</param>
+        /// <param name="height">Height of the rectangle</param>
+        /// <param name="character">Character to draw the border with, or <see cref="null"/> to use default pretty borders</param>
+        /// <param name="foreground">Color to draw the border with</param>
+        /// <param name="background">Color to draw the border with</param>
+        /// <returns></returns>
+        public ConsoleCanvas CreateBorder(int startX, int startY, int width, int height, char? character, TerminalColor foreground, TerminalColor background)
+        {
             int endX = startX + width - 1;
             int endY = startY + height - 1;
 
-            var pixel = new Pixel
-            {
-                Foreground = foreground,
-                Background = background,
-                Character = character ?? _emptyCharacter
-            };
+            var pixel = new Pixel(character ?? _emptyCharacter, foreground, background);
 
             for (int y = startY; y <= endY && y < Height; y++)
             {
@@ -232,16 +262,26 @@ namespace ConsoleRenderer
         /// <param name="background">Color to draw the background with</param>
         public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character, ConsoleColor foreground, ConsoleColor background)
         {
+            return CreateRectangle(startX, startY, width, height, character, new TerminalColor(foreground), new TerminalColor(background));
+        }
+
+        /// <summary>
+        /// Creates a rectangle on the canvas
+        /// </summary>
+        /// <param name="startX">Left edge of the rectangle</param>
+        /// <param name="startY">Top edge of the rectangle</param>
+        /// <param name="width">Width of the rectangle</param>
+        /// <param name="height">Height of the rectangle</param>
+        /// <param name="character">Character to fill the rectangle with</param>
+        /// <param name="foreground">Color to draw the character with</param>
+        /// <param name="background">Color to draw the background with</param>
+        public ConsoleCanvas CreateRectangle(int startX, int startY, int width, int height, char character, TerminalColor foreground, TerminalColor background)
+        {
             int yMin = Math.Max(0, startY);
             int yMax = Math.Min(Height, startY + height);
             int xMin = Math.Max(0, startX);
             int xMax = Math.Min(Width, startX + width);
-            var pixel = new Pixel
-            {
-                Character = character,
-                Foreground = foreground,
-                Background = background
-            };
+            var pixel = new Pixel(character, foreground, background);
 
             for (int y = yMin; y < yMax; y++)
             {
@@ -285,8 +325,8 @@ namespace ConsoleRenderer
             // Cursor to top-left (1-based in ANSI)
             buffer.Write("\x1b[1;1H"u8);
 
-            int lastFg = -1;
-            int lastBg = -1;
+            TerminalColor? lastFg = null;
+            TerminalColor? lastBg = null;
 
             for (int y = 0; y < effectiveHeight; y++)
             {
@@ -296,14 +336,20 @@ namespace ConsoleRenderer
                 for (int x = 0; x < effectiveWidth; x++)
                 {
                     Pixel p = source[y * Width + x];
-                    int fg = AnsiForeground[(int)p.Foreground];
-                    int bg = AnsiBackground[(int)p.Background];
+                    TerminalColor fg = p.Foreground;
+                    TerminalColor bg = p.Background;
 
-                    if (fg != lastFg || bg != lastBg)
+                    if (lastFg == null || fg != lastFg)
                     {
-                        WriteSgr(buffer, fg);
-                        WriteSgr(buffer, bg);
+                        if (fg.IsRgb) WriteRgbSgr(buffer, true, fg);
+                        else WriteSgr(buffer, AnsiForeground[(int)p.Foreground.StandardColor]);
                         lastFg = fg;
+                    }
+
+                    if (lastBg == null || bg != lastBg)
+                    {
+                        if (bg.IsRgb) WriteRgbSgr(buffer, false, bg);
+                        else WriteSgr(buffer, AnsiBackground[(int)p.Background.StandardColor]);
                         lastBg = bg;
                     }
 
@@ -313,9 +359,9 @@ namespace ConsoleRenderer
                 // Newline between rows only; skipping after last row prevents terminal scroll (first line cut off)
                 if (y < effectiveHeight - 1)
                     buffer.Write("\n"u8);
-                
-                lastFg = -1;
-                lastBg = -1;
+
+                lastFg = null;
+                lastBg = null;
 
                 if (!skipRow)
                 {
@@ -348,12 +394,7 @@ namespace ConsoleRenderer
             _pixels = new Pixel[Width * Height];
             _previous = new Pixel[Width * Height];
 
-            var defaultPixel = new Pixel
-            {
-                Background = DefaultBackgroundColor,
-                Foreground = DefaultForegroundColor,
-                Character = _emptyCharacter
-            };
+            var defaultPixel = new Pixel(_emptyCharacter, new TerminalColor(DefaultForegroundColor), new TerminalColor(DefaultBackgroundColor));
 
             Array.Fill(_pixels, defaultPixel);
             Array.Fill(_previous, defaultPixel);
@@ -381,6 +422,18 @@ namespace ConsoleRenderer
         /// <returns></returns>
         public ConsoleCanvas Set(int x, int y, ConsoleColor color)
         {
+            return Set(x, y, _defaultCharacter, new TerminalColor(color));
+        }
+
+        /// <summary>
+        /// Set a particular pixel on the canvas to the specified foreground color, with the default background color
+        /// </summary>
+        /// <param name="x"></param>
+        /// <param name="y"></param>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        public ConsoleCanvas Set(int x, int y, TerminalColor color)
+        {
             return Set(x, y, _defaultCharacter, color);
         }
 
@@ -393,7 +446,19 @@ namespace ConsoleRenderer
         /// <param name="color">Color to draw the character with</param>
         public ConsoleCanvas Set(int x, int y, char character, ConsoleColor color)
         {
-            return Set(x, y, character, color, DefaultBackgroundColor);
+            return Set(x, y, character, new TerminalColor(color), new TerminalColor(DefaultBackgroundColor));
+        }
+
+        /// <summary>
+        /// Set a particular pixel on the canvas to the specified character with a given color and the default background color
+        /// </summary>
+        /// <param name="x">X Coordinate of the pixel</param>
+        /// <param name="y">Y Coordinate of the pixel</param>
+        /// <param name="character">Character to set the pixel to</param>
+        /// <param name="color">Color to draw the character with</param>
+        public ConsoleCanvas Set(int x, int y, char character, TerminalColor color)
+        {
+            return Set(x, y, character, color, new TerminalColor(DefaultBackgroundColor));
         }
 
         /// <summary>
@@ -406,12 +471,20 @@ namespace ConsoleRenderer
         /// <param name="background">Background color to draw the character with</param>
         public ConsoleCanvas Set(int x, int y, char character, ConsoleColor foreground, ConsoleColor background)
         {
-            return Set(x, y, new Pixel
-            {
-                Character = character,
-                Foreground = foreground,
-                Background = background,
-            });
+            return Set(x, y, new Pixel(character, new TerminalColor(foreground), new TerminalColor(background)));
+        }
+
+        /// <summary>
+        /// Set a particular pixel on the canvas to the specified character with a given background and foreground color
+        /// </summary>
+        /// <param name="x">X Coordinate of the pixel</param>
+        /// <param name="y">Y Coordinate of the pixel</param>
+        /// <param name="character">Character to set the pixel to</param>
+        /// <param name="foreground">Foreground color to draw the character with</param>
+        /// <param name="background">Background color to draw the character with</param>
+        public ConsoleCanvas Set(int x, int y, char character, TerminalColor foreground, TerminalColor background)
+        {
+            return Set(x, y, new Pixel(character, foreground, background));
         }
 
         /// <summary>
@@ -483,15 +556,29 @@ namespace ConsoleRenderer
         /// <param name="background">Background color to draw the string with, or <see cref="DefaultBackgroundColor"/> if <see cref="null"/></param>
         public ConsoleCanvas Text(int x, int y, string text, bool centered = false, ConsoleColor? foreground = null, ConsoleColor? background = null)
         {
+            return Text(x, y, text, centered,
+                foreground.HasValue ? new TerminalColor(foreground.Value) : new TerminalColor(DefaultForegroundColor),
+                background.HasValue ? new TerminalColor(background.Value) : new TerminalColor(DefaultBackgroundColor));
+        }
+
+        /// <summary>
+        /// Draws the given <paramref name="text"/> to the canvas, starting at the <paramref name="x"/> and <paramref name="y"/> coordinates
+        /// </summary>
+        /// <param name="x">X Coordinate of the first character of the string</param>
+        /// <param name="y">Y Coordinate of the string</param>
+        /// <param name="text">The text to draw</param>
+        /// <param name="centered">Whether the text should be centered around the <paramref name="x"/> coordinate</param>
+        /// <param name="foreground">Foreground color to draw the string with</param>
+        /// <param name="background">Background color to draw the string with</param>
+        public ConsoleCanvas Text(int x, int y, string text, bool centered, TerminalColor foreground, TerminalColor background)
+        {
             // If the text should be centered, deduct half the text length from the x coordinate
             int startX = centered ? x - (int)Math.Floor(text.Length / 2d) : x;
-            var fg = foreground ?? DefaultForegroundColor;
-            var bg = background ?? DefaultBackgroundColor;
 
             if (y < 0 || y >= Height)
                 return this;
             int rowStart = y * Width;
-            var pixel = new Pixel { Foreground = fg, Background = bg };
+            var pixel = new Pixel(_emptyCharacter, foreground, background);
             for (int t = 0; t < text.Length; t++)
             {
                 int px = startX + t;
@@ -526,12 +613,7 @@ namespace ConsoleRenderer
 
         private void ClearPixelCache()
         {
-            var defaultPixel = new Pixel
-            {
-                Background = DefaultBackgroundColor,
-                Foreground = DefaultForegroundColor,
-                Character = _emptyCharacter
-            };
+            var defaultPixel = new Pixel(_emptyCharacter, new TerminalColor(DefaultForegroundColor), new TerminalColor(DefaultBackgroundColor));
 
             for (int i = 0; i < _previous.Length; i++)
                 _previous[i] = defaultPixel;
@@ -584,6 +666,27 @@ namespace ConsoleRenderer
             buffer.Write("m"u8);
         }
 
+        private static void WriteRgbSgr(ArrayBufferWriter<byte> buffer, bool isForeground, TerminalColor color)
+        {
+            // Write prefix: \x1b[38;2; for Foreground, \x1b[48;2; for Background
+            buffer.Write(isForeground ? "\x1b[38;2;"u8 : "\x1b[48;2;"u8);
+
+            WriteNumberFast(buffer, color.R);
+            buffer.Write(";"u8);
+            WriteNumberFast(buffer, color.G);
+            buffer.Write(";"u8);
+            WriteNumberFast(buffer, color.B);
+            buffer.Write("m"u8);
+        }
+        
+        private static void WriteNumberFast(ArrayBufferWriter<byte> buffer, byte value)
+        {
+            // A byte takes max 3 characters (0-255). 
+            Span<byte> dest = buffer.GetSpan(3);
+            Utf8Formatter.TryFormat(value, dest, out int written);
+            buffer.Advance(written);
+        }
+        
         private static void WriteUtf8Char(ArrayBufferWriter<byte> buffer, char c)
         {
             Span<char> cSpan = stackalloc char[1] { c };
