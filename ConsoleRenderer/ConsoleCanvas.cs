@@ -42,6 +42,8 @@ namespace ConsoleRenderer
 
         private const char _defaultCharacter = '*';
         private const char _emptyCharacter = ' ';
+        private readonly TerminalColor _defaultForegroundColor = new TerminalColor(Console.ForegroundColor);
+        private readonly TerminalColor _defaultBackgroundColor = new TerminalColor(Console.BackgroundColor);
 
         private int _previousWidth;
         private int _previousHeight;
@@ -325,8 +327,8 @@ namespace ConsoleRenderer
             // Cursor to top-left (1-based in ANSI)
             buffer.Write("\x1b[1;1H"u8);
 
-            TerminalColor? lastFg = null;
-            TerminalColor? lastBg = null;
+            TerminalColor lastFg = _defaultForegroundColor;
+            TerminalColor lastBg = _defaultBackgroundColor;
 
             for (int y = 0; y < effectiveHeight; y++)
             {
@@ -343,6 +345,7 @@ namespace ConsoleRenderer
                     {
                         if (fg.IsRgb) WriteRgbSgr(buffer, true, fg);
                         else WriteSgr(buffer, AnsiForeground[(int)p.Foreground.StandardColor]);
+
                         lastFg = fg;
                     }
 
@@ -350,6 +353,7 @@ namespace ConsoleRenderer
                     {
                         if (bg.IsRgb) WriteRgbSgr(buffer, false, bg);
                         else WriteSgr(buffer, AnsiBackground[(int)p.Background.StandardColor]);
+                        
                         lastBg = bg;
                     }
 
@@ -360,8 +364,9 @@ namespace ConsoleRenderer
                 if (y < effectiveHeight - 1)
                     buffer.Write("\n"u8);
 
-                lastFg = null;
-                lastBg = null;
+                // Do not reset lastFg/lastBg to default here: we did not send any SGR, so the terminal
+                // still has the last cell's colors. Resetting would make us skip emitting when the next
+                // row starts with default colors, so the previous row's non-default background would bleed.
 
                 if (!skipRow)
                 {
@@ -371,6 +376,8 @@ namespace ConsoleRenderer
                 }
             }
 
+            // Reset SGR so the terminal's default background/foreground are restored and not left as the last cell's colors
+            buffer.Write("\x1b[0m"u8);
             // Cursor to top-left (1-based in ANSI)
             buffer.Write("\x1b[1;1H"u8);
             
